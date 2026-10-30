@@ -131,10 +131,16 @@ details { color: var(--muted); }
 summary { cursor: pointer; font-weight: 700; }
 details p { max-width: 75ch; }
 footer { color: var(--muted); font-size: .85rem; max-width: 80ch; }
+.filter-toggle { display: none; }
 @media (max-width: 600px) {
   h1 { font-size: 1.7rem; }
   .card { padding: 1rem; }
   .spacer { display: none; }
+  .filter-toggle { display: inline-flex; justify-self: start; }
+  .filters:not(.show) { display: none; }
+  .wrap { padding-block: 1.1rem 3rem; gap: 1rem; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .2rem; }
+  .tab { flex: none; }
 }
 </style>
 
@@ -169,7 +175,8 @@ footer { color: var(--muted); font-size: .85rem; max-width: 80ch; }
   <div class="tabs" id="tabs" role="group" aria-label="Show flats by status"></div>
   <p class="note" id="datasetNote" hidden></p>
 
-  <section class="filters" aria-label="Filters">
+  <button type="button" class="btn filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="filterBox">Sort and filter</button>
+  <section class="filters" id="filterBox" aria-label="Filters">
     <div class="fields">
       <div class="field"><label for="fSort">Sort by</label>
         <select id="fSort">
@@ -455,6 +462,11 @@ $("tabs").addEventListener("click", e => {
   tab = b.dataset.tab; store.set("tab", tab); shown = PAGE; render();
 });
 $("loadMore").addEventListener("click", () => { shown += PAGE; render(); });
+$("filterToggle").addEventListener("click", e => {
+  const open = $("filterBox").classList.toggle("show");
+  e.currentTarget.setAttribute("aria-expanded", String(open));
+  e.currentTarget.textContent = open ? "Hide sort and filter" : "Sort and filter";
+});
 $("nav").addEventListener("click", e => {
   const b = e.target.closest("[data-page]");
   if (!b) return;
