@@ -1,0 +1,682 @@
+<!doctype html><html lang="en-GB" data-site="public"><head><meta name="robots" content="noindex,nofollow"></head><body><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>London Flat Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: white pages with orange accents. Three pages (all flats, interested, not interested) of roomy cards, price and commute first. */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --soft: #fff3e8; --line: #f2d9c4;
+  --fg: #2a211b; --muted: #6b5a4e; --accent: #c2410c; --accent-fg: #ffffff; --accent-soft: #fff0e2; --star: #c2410c;
+  --shortlist-bg: #c2410c; --shortlist-fg: #ffffff;
+  --open-bg: #ffdcc0; --open-fg: #7c2d08;
+  --check-bg: #fff3e8; --check-fg: #7c2d08;
+  --reject-bg: #eeeae6; --reject-fg: #5a504a;
+  --warn: #9a3412;
+  --font: "Atkinson Hyperlegible", Verdana, "Segoe UI", system-ui, sans-serif;
+  --size: 17px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1c1815; --surface: #27211c; --soft: #33291f; --line: #4a3b2e;
+  --fg: #f7f0e9; --muted: #c9bcae; --accent: #ff9a4d; --accent-fg: #241206; --accent-soft: #3d2c1c; --star: #ffb066;
+  --shortlist-bg: #ff9a4d; --shortlist-fg: #241206;
+  --open-bg: #5a3418; --open-fg: #ffd9ba;
+  --check-bg: #3d2c1c; --check-fg: #ffd9ba;
+  --reject-bg: #3a3531; --reject-fg: #cfc6bd;
+  --warn: #ffb88a;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1c1815; --surface: #27211c; --soft: #33291f; --line: #4a3b2e;
+  --fg: #f7f0e9; --muted: #c9bcae; --accent: #ff9a4d; --accent-fg: #241206; --accent-soft: #3d2c1c; --star: #ffb066;
+  --shortlist-bg: #ff9a4d; --shortlist-fg: #241206;
+  --open-bg: #5a3418; --open-fg: #ffd9ba;
+  --check-bg: #3d2c1c; --check-fg: #ffd9ba;
+  --reject-bg: #3a3531; --reject-fg: #cfc6bd;
+  --warn: #ffb88a;
+  color-scheme: dark;
+}
+:root[data-size="large"] { --size: 19px; }
+:root[data-size="xlarge"] { --size: 21px; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { font-size: var(--size); }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 1rem; line-height: 1.55; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 2rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 1.5rem; }
+.wrap > * { min-width: 0; }
+.top { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: flex-start; justify-content: space-between; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: .35rem 0 0; max-width: 58ch; }
+.prefs { display: flex; flex-wrap: wrap; gap: .6rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { font: inherit; font-size: .9rem; color: var(--muted); background: none; border: 0; padding: .4rem .8rem; cursor: pointer; min-height: 40px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.tabs { display: flex; flex-wrap: wrap; gap: .6rem; }
+.tab { font: inherit; display: inline-flex; gap: .5rem; align-items: baseline; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .45rem 1rem; cursor: pointer; min-height: 44px; }
+.tab b { font-size: 1.05rem; }
+.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.note { margin: 0; color: var(--muted); max-width: 75ch; }
+.filters { display: grid; gap: 1rem; padding: 1.1rem 1.2rem; background: var(--soft); border-radius: 16px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .9rem 1rem; }
+.field { display: grid; gap: .25rem; min-width: 0; }
+.field label { font-size: .9rem; font-weight: 700; }
+select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .5rem .6rem; width: 100%; min-height: 44px; }
+.toggles { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; align-items: center; }
+.check { display: flex; gap: .5rem; align-items: center; cursor: pointer; min-height: 40px; }
+.check input { accent-color: var(--accent); width: 1.15rem; height: 1.15rem; margin: 0; }
+.spacer { flex: 1 1 0; }
+.import { color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; position: relative; font-size: .9rem; }
+.import input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.import:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count { color: var(--muted); margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 1.1rem; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.15rem 1.25rem; display: grid; gap: .85rem; min-width: 0; }
+.card.rej { opacity: .78; }
+.head { display: grid; grid-template-columns: 1fr auto; gap: .2rem .8rem; align-items: start; }
+.title { font-size: 1.25rem; font-weight: 700; line-height: 1.25; margin: 0; overflow-wrap: anywhere; }
+.place { color: var(--muted); font-size: .92rem; grid-column: 1; }
+.pill { font-size: .85rem; font-weight: 700; padding: .15rem .65rem; border-radius: 999px; background: var(--soft); white-space: nowrap; grid-column: 2; grid-row: 1; }
+a.pill { color: var(--fg); text-decoration: underline; text-underline-offset: 2px; }
+.title a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+a.pill.shortlist { background: var(--shortlist-bg); color: var(--shortlist-fg); }
+.pill.shortlist { background: var(--shortlist-bg); color: var(--shortlist-fg); }
+.pill.open, a.pill.open { background: var(--open-bg); color: var(--open-fg); }
+.pill.check, a.pill.check { background: var(--check-bg); color: var(--check-fg); }
+.pill.reject, a.pill.reject { background: var(--reject-bg); color: var(--reject-fg); }
+.money { display: flex; flex-wrap: wrap; gap: .1rem .7rem; align-items: baseline; }
+.money span { color: var(--muted); font-size: .92rem; }
+.money .price { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+.money .warn { color: var(--warn); font-weight: 700; }
+.commute { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; background: var(--accent-soft); border-radius: 12px; padding: .7rem .8rem; }
+.way { display: grid; grid-template-columns: auto 1fr; gap: 0 .55rem; align-items: center; min-width: 0; }
+.way svg { width: 1.5rem; height: 1.5rem; grid-row: span 2; color: var(--accent); }
+.way b { font-size: 1.1rem; }
+.way span { font-size: .85rem; color: var(--muted); }
+.commute .cap { grid-column: 1 / -1; font-size: .85rem; color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .5rem .9rem; margin: 0; }
+.facts dt { font-size: .82rem; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.alert { margin: 0; color: var(--warn); font-weight: 700; font-size: .95rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.btn { font: inherit; font-size: .95rem; display: inline-flex; align-items: center; min-height: 44px; padding: .35rem .9rem; border-radius: 10px; border: 1px solid var(--line); background: none; color: var(--fg); cursor: pointer; text-decoration: none; }
+.btn.go { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.star { font: inherit; font-size: .95rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 10px; min-height: 44px; padding: .35rem .8rem; cursor: pointer; margin-left: auto; }
+.star[aria-pressed="true"] { color: var(--star); border-color: var(--star); font-weight: 700; }
+.more { background: var(--soft); border-radius: 12px; padding: .9rem 1rem; display: grid; gap: .7rem; }
+.more .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.more p { margin: 0; max-width: 70ch; }
+.more h4 { margin: 0; font-size: .85rem; color: var(--muted); font-weight: 400; }
+.nav { display: flex; flex-wrap: wrap; gap: .25rem 1.6rem; border-bottom: 2px solid var(--line); }
+.nav button { font: inherit; font-size: 1.1rem; color: var(--muted); background: none; border: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; padding: .5rem .1rem; cursor: pointer; min-height: 44px; }
+.nav button[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.handoff-btn { font: inherit; font-weight: 700; color: var(--accent-fg); background: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: .4rem 1.1rem; min-height: 40px; cursor: pointer; }
+.handoff { display: grid; gap: .6rem; background: var(--soft); border-radius: 16px; padding: 1rem 1.2rem; }
+.handoff p { margin: 0; max-width: 70ch; }
+.handoff textarea, .cbox textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .7rem; width: 100%; resize: vertical; }
+.cbox { display: grid; gap: .45rem; }
+.cbox label { font-size: .9rem; font-weight: 700; }
+.note-saved { margin: 0; background: var(--soft); border-radius: 10px; padding: .55rem .75rem; overflow-wrap: anywhere; }
+.stamp { margin: 0; color: var(--accent); font-size: .92rem; font-weight: 700; }
+.btn.pick { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.star.icon { font-size: 1.2rem; padding: .25rem .6rem; }
+.none { color: var(--muted); font-weight: 400; }
+.empty { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+.loadmore { justify-self: center; }
+button:focus-visible, select:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+details { color: var(--muted); }
+summary { cursor: pointer; font-weight: 700; }
+details p { max-width: 75ch; }
+footer { color: var(--muted); font-size: .85rem; max-width: 80ch; }
+@media (max-width: 600px) {
+  h1 { font-size: 1.7rem; }
+  .card { padding: 1rem; }
+  .spacer { display: none; }
+}
+</style>
+
+<main class="wrap">
+  <header class="top">
+    <div>
+      <h1>London Flat Tracker</h1>
+      <p class="sub">2-bed period flats in zones 1 and 2, with the journey to the office at EC2A 2FA. Budget £550k. Best value at £500k or less.</p>
+    </div>
+    <div class="prefs">
+      <div class="seg" role="group" aria-label="Colour theme">
+        <button type="button" id="themeSystem" data-theme-set="system" aria-pressed="true">Auto</button>
+        <button type="button" id="themeLight" data-theme-set="light" aria-pressed="false">Light</button>
+        <button type="button" id="themeDark" data-theme-set="dark" aria-pressed="false">Dark</button>
+      </div>
+      <div class="seg" role="group" aria-label="Text size">
+        <button type="button" id="sizeNormal" data-size-set="normal" aria-pressed="true">A</button>
+        <button type="button" id="sizeLarge" data-size-set="large" aria-pressed="false">A+</button>
+        <button type="button" id="sizeXlarge" data-size-set="xlarge" aria-pressed="false">A++</button>
+      </div>
+      <button type="button" class="handoff-btn" id="handoffBtn">Handoff</button>
+    </div>
+  </header>
+
+  <section class="handoff" id="handoffPanel" aria-live="polite" hidden>
+    <p id="handoffStatus"></p>
+    <textarea id="handoffText" rows="2" readonly aria-label="Message to paste into Claude"></textarea>
+    <div class="actions"><button type="button" class="btn" id="handoffCopy">Copy message</button></div>
+  </section>
+
+  <nav class="nav" id="nav" aria-label="Pages"></nav>
+  <div class="tabs" id="tabs" role="group" aria-label="Show flats by status"></div>
+  <p class="note" id="datasetNote" hidden></p>
+
+  <section class="filters" aria-label="Filters">
+    <div class="fields">
+      <div class="field"><label for="fSort">Sort by</label>
+        <select id="fSort">
+          <option value="distance">Closest to N1 5DH</option>
+          <option value="transit">Quickest tube or train to office</option>
+          <option value="bike">Quickest bike to office</option>
+          <option value="price">Lowest price</option>
+          <option value="ppsf">Lowest price per sq ft</option>
+          <option value="street">Street name</option>
+        </select></div>
+      <div class="field"><label for="fArea">Area</label><select id="fArea"></select></div>
+      <div class="field"><label for="fZone">Zone</label><select id="fZone"></select></div>
+      <div class="field"><label for="fType">Building type</label><select id="fType"></select></div>
+      <div class="field"><label for="fTransit">Tube or train to office</label>
+        <select id="fTransit"><option value="">Any time</option><option value="20">Up to 20 min</option><option value="30">Up to 30 min</option><option value="40">Up to 40 min</option><option value="50">Up to 50 min</option></select></div>
+      <div class="field"><label for="fBike">Bike to office</label>
+        <select id="fBike"><option value="">Any time</option><option value="15">Up to 15 min</option><option value="25">Up to 25 min</option><option value="35">Up to 35 min</option><option value="45">Up to 45 min</option></select></div>
+    </div>
+    <div class="toggles">
+      <label class="check" id="lGround"><input type="checkbox" id="fGround"> Show ground floor</label>
+      <label class="check" id="lRejected"><input type="checkbox" id="fRejected"> Show rejected</label>
+      <label class="check" id="lGone"><input type="checkbox" id="fGone"> Show sold or removed</label>
+      <label class="check"><input type="checkbox" id="fStarred"> Starred only</label>
+      <span class="spacer"></span>
+      <label class="import">Import flats.json<input type="file" id="importFile" accept=".json,application/json"></label>
+    </div>
+  </section>
+
+  <p class="count" id="count" role="status">Loading flats…</p>
+  <div class="cards" id="rows"></div>
+  <div class="empty" id="empty" hidden></div>
+  <button type="button" class="btn loadmore" id="loadMore" hidden>Show more flats</button>
+
+  <details id="blockBox" hidden>
+    <summary id="blockTitle">Council and estate blocks not to re-add</summary>
+    <p id="blockList"></p>
+  </details>
+
+  <footer>
+    Tube and train times come from TfL's journey planner for a Tuesday arrival at 9am, walking included, buses excluded. Bike times and miles come from OpenStreetMap cycle routes at a steady, unhurried pace, so a confident cyclist may be quicker. Journeys start from the flat's postcode, or the middle of the postcode district where the listing gives no full postcode. Miles from N1 5DH are straight lines. Stamp duty uses first-time buyer rates up to £500k and standard rates above that, and assumes the April 2025 bands still apply. Blank fields show as "Not stated" and are never estimated.
+  </footer>
+</main>
+
+<script id="seedData" type="application/json">[]</script>
+<script>
+const HOME = { lat: 51.536559, lon: -0.087353 };
+const PAGE = 40;
+const STATUSES = [["all", "All live"], ["shortlist", "Shortlist"], ["open", "Open"], ["check", "To check"]];
+const ICON = {
+  train: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l2-4M15 21l-2-4"/><circle cx="9" cy="14" r=".6"/><circle cx="15" cy="14" r=".6"/></svg>`,
+  bike: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17l4-8h6l3 8M9.5 9L12 17M8 6h3M15.5 9l-1-3h2"/></svg>`,
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const gbp = n => "£" + Math.round(n).toLocaleString("en-GB");
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+let flats = [], blocks = [], stars = new Set(store.get("stars", [])), db = null, noteText = "";
+let loaded = false, tab = store.get("tab", "all"), shown = PAGE, canWrite = true;
+let decisions = store.get("decisions", {}), page = store.get("page", "flats");
+const opened = new Set(), commenting = new Set(), drafts = {};
+const PAGES = [["flats", "All flats"], ["interested", "Interested"], ["not", "Not interested"]];
+const TRACKER_URL = "https://claude.ai/artifact/1dr7jtpF2cbYc2ukar5Eeo";
+
+/* Display preferences */
+function applyTheme(mode, fromClick) {
+  if (mode === "light" || mode === "dark") document.documentElement.setAttribute("data-theme", mode);
+  else if (fromClick) document.documentElement.removeAttribute("data-theme");
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.themeSet === mode)));
+}
+function applySize(size) {
+  if (size === "normal") document.documentElement.removeAttribute("data-size");
+  else document.documentElement.setAttribute("data-size", size);
+  document.querySelectorAll("[data-size-set]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sizeSet === size)));
+}
+document.querySelector(".prefs").addEventListener("click", e => {
+  const { themeSet, sizeSet } = e.target.dataset;
+  if (themeSet) { store.set("themeChoice", themeSet); applyTheme(themeSet, true); }
+  if (sizeSet) { store.set("size", sizeSet); applySize(sizeSet); }
+});
+applyTheme(store.get("themeChoice", "light"), false);
+applySize(store.get("size", "normal"));
+
+/* Derived values */
+function stampDuty(p) {
+  if (!p) return null;
+  if (p <= 500000) return Math.floor(Math.max(0, p - 300000) * 0.05);
+  const bands = [[125000, 0], [250000, 0.02], [925000, 0.05], [1500000, 0.1], [Infinity, 0.12]];
+  let tax = 0, low = 0;
+  for (const [top, rate] of bands) { if (p > low) tax += (Math.min(p, top) - low) * rate; low = top; }
+  return Math.floor(tax);
+}
+const offersOver = f => /offers?\s+(over|in excess)/i.test(f.priceNote || "");
+const reliefLost = f => !!f.price && (f.price > 500000 || (f.price === 500000 && offersOver(f)));
+const ppsf = f => f.ppsf || (f.price && f.sqft ? Math.round(f.price / f.sqft) : null);
+const isRejected = f => /^reject/i.test(f.status || "");
+const isGround = f => /ground|basement|garden|lower/i.test(f.floor || "");
+const isGone = f => /sold|removed/i.test(f.listingState || "");
+const statusClass = f => { const s = String(f.status || "").toLowerCase(); return ["shortlist", "open", "check", "reject"].includes(s) ? s : ""; };
+function distance(f) {
+  if (typeof f.distance === "number") return f.distance;
+  if (f.lat == null || f.lon == null) return null;
+  const rad = d => d * Math.PI / 180, dLat = rad(f.lat - HOME.lat), dLon = rad(f.lon - HOME.lon);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(HOME.lat)) * Math.cos(rad(f.lat)) * Math.sin(dLon / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.sqrt(a));
+}
+const blockMatch = f => isRejected(f) ? null : blocks.find(b => b.match && String(f.street || "").toLowerCase().includes(String(b.match).toLowerCase()));
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : "";
+const yearly = v => v === 0 ? "£0 listed, confirm" : typeof v === "number" ? gbp(v) + "/yr" : v;
+
+/* Filters */
+function fillSelect(el, label, values) {
+  const cur = el.value || store.get(el.id, "");
+  el.innerHTML = `<option value="">${esc(label)}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  el.value = values.includes(cur) ? cur : "";
+}
+const uniq = key => [...new Set(flats.map(f => f[key]).filter(v => v !== "" && v != null).map(String))].sort();
+function visible() {
+  const area = $("fArea").value, zone = $("fZone").value, type = $("fType").value;
+  const maxT = +$("fTransit").value, maxB = +$("fBike").value;
+  const onPage = f => {
+    const d = decisions[f.id]?.decision;
+    if (page !== "flats") return d === page;
+    return !d && (tab === "all" || statusClass(f) === tab) &&
+      ($("fGround").checked || !isGround(f)) && ($("fRejected").checked || !isRejected(f)) && ($("fGone").checked || !isGone(f));
+  };
+  return flats.filter(f => onPage(f) &&
+    (!area || f.area === area) && (!zone || String(f.zone) === zone) && (!type || f.buildingType === type) &&
+    (!maxT || (f.transitMins != null && f.transitMins <= maxT)) && (!maxB || (f.bikeMins != null && f.bikeMins <= maxB)) &&
+    (!$("fStarred").checked || stars.has(f.id)));
+}
+function sortValue(f, key) {
+  switch (key) {
+    case "street": return String(f.street || "").toLowerCase();
+    case "transit": return f.transitMins ?? null;
+    case "bike": return f.bikeMins ?? null;
+    case "price": return f.price ?? null;
+    case "ppsf": return ppsf(f);
+    default: return distance(f);
+  }
+}
+function sorted(list) {
+  const key = $("fSort").value;
+  return [...list].sort((a, b) => {
+    const x = sortValue(a, key), y = sortValue(b, key);
+    if (x === null && y === null) return 0;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return x < y ? -1 : x > y ? 1 : 0;
+  });
+}
+
+/* Rendering */
+const orNone = v => v === "" || v == null ? `<span class="none">Not stated</span>` : esc(v);
+const fact = (k, v) => `<div><dt>${k}</dt><dd>${orNone(v)}</dd></div>`;
+function way(icon, label, mins, sub) {
+  return `<div class="way">${ICON[icon]}<b>${mins != null ? mins + " min" : `<span class="none">No time yet</span>`}</b><span>${esc(label)}${sub ? ", " + esc(sub) : ""}</span></div>`;
+}
+function changes(n) { return n == null ? "" : n === 0 ? "direct" : n === 1 ? "1 change" : n + " changes"; }
+function moreBlock(f) {
+  const check = Array.isArray(f.check) ? f.check.join("; ") : f.check;
+  return `<div class="more">
+    <dl class="facts">
+      ${fact("Lease", f.lease)}${fact("Ground rent", yearly(f.groundRent))}${fact("Service charge", yearly(f.serviceCharge))}
+      ${fact("Days on market", f.daysOnMarket)}${fact("Reductions", f.reductions)}${fact("Agent", f.agent)}
+      ${fact("From N1 5DH", distance(f) != null ? distance(f).toFixed(1) + " miles" : "")}${fact("Last checked", f.lastChecked)}
+    </dl>
+    ${f.transitRoute ? `<div><h4>Tube or train route</h4><p>${esc(f.transitRoute)}</p></div>` : ""}
+    ${f.reason ? `<div><h4>Why it has this status</h4><p>${esc(f.reason)}</p></div>` : ""}
+    ${check ? `<div><h4>What to check</h4><p>${esc(check)}</p></div>` : ""}
+  </div>`;
+}
+function card(f) {
+  const url = safeUrl(f.url), p = ppsf(f), sd = stampDuty(reliefLost(f) && f.price === 500000 ? 500001 : f.price);
+  const lost = reliefLost(f), hit = blockMatch(f), on = stars.has(f.id), open = opened.has(f.id);
+  const place = [f.area, f.postcode, f.zone ? "Zone " + f.zone : ""].filter(Boolean).join(" · ");
+  const dec = decisions[f.id] || {}, writing = commenting.has(f.id);
+  const checked = dec.checkedAt ? new Date(dec.checkedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const pick = (value, label) => `<button type="button" class="btn pick" data-fid="${value}-${esc(f.id)}" data-decide="${value}">${label}</button>`;
+  const choices = !dec.decision ? pick("interested", "Interested") + pick("not", "Not interested")
+    : (dec.decision === "interested" ? pick("not", "Move to Not interested") : pick("interested", "Move to Interested")) + pick("", "Back to all flats");
+  const floorUnknown = !f.floor || /not stated|confirm/i.test(f.floor);
+  return `<article class="card${isRejected(f) ? " rej" : ""}" data-id="${esc(f.id)}">
+    <div class="head">
+      <h3 class="title">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(f.street)}</a>` : esc(f.street)}</h3>
+      ${url ? `<a class="pill ${statusClass(f)}" href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(f.status)}: open the listing for ${esc(f.street)}">${esc(f.status)}</a>`
+        : `<span class="pill ${statusClass(f)}">${orNone(f.status)}</span>`}
+      <span class="place">${esc(place)}</span>
+    </div>
+    <div class="money">
+      <span class="price">${f.price ? gbp(f.price) : "Price not stated"}</span>
+      ${f.priceNote ? `<span>${esc(f.priceNote)}</span>` : ""}
+      ${f.priceWas && f.price < f.priceWas ? `<span class="warn">Dropped from ${gbp(f.priceWas)}</span>` : ""}
+      ${sd != null ? `<span class="${lost ? "warn" : ""}">${gbp(sd)}${offersOver(f) ? "+" : ""} stamp duty${lost ? ", no first-time relief" : ""}</span>` : ""}
+    </div>
+    <div class="commute">
+      <span class="cap">To the office, EC2A 2FA</span>
+      ${way("train", "Tube or train", f.transitMins, changes(f.transitChanges))}
+      ${way("bike", "Bike", f.bikeMins, f.bikeMiles != null ? f.bikeMiles + " miles" : "")}
+    </div>
+    <dl class="facts">
+      ${fact("Floor", f.floor)}${fact("Size", f.sqft ? f.sqft + " sq ft" : "")}${fact("Per sq ft", p ? gbp(p) : "")}
+      ${fact("Building", f.buildingType)}${fact("Tenure", f.tenure)}
+    </dl>
+    ${f.listingState && !/live/i.test(f.listingState) ? `<p class="alert">${esc(f.listingState)}</p>` : ""}
+    ${floorUnknown ? `<p class="alert">Floor not confirmed.</p>` : ""}
+    ${hit ? `<p class="alert">Matches the reject list: ${esc(hit.name)}.</p>` : ""}
+    ${checked ? `<p class="stamp">Checked ${esc(checked)}</p>` : ""}
+    ${dec.comment && !writing ? `<p class="note-saved">${esc(dec.comment)}</p>` : ""}
+    ${writing ? `<div class="cbox">
+      <label for="c-${esc(f.id)}">Your comment</label>
+      <textarea id="c-${esc(f.id)}" data-draft="${esc(f.id)}" rows="3">${esc(drafts[f.id] ?? dec.comment ?? "")}</textarea>
+      <div class="actions"><button type="button" class="btn go save-comment" data-fid="save-${esc(f.id)}">Save comment</button></div>
+    </div>` : ""}
+    ${open ? moreBlock(f) : ""}
+    <div class="actions">
+      ${url ? `<a class="btn go" href="${esc(url)}" target="_blank" rel="noopener">View listing</a>` : ""}
+      ${canWrite ? choices : ""}
+      ${canWrite ? `<button type="button" class="btn comment-btn" data-fid="comment-${esc(f.id)}" aria-expanded="${writing}">${dec.comment ? "Edit comment" : "Comment"}</button>` : ""}
+      <button type="button" class="btn more-btn" data-fid="more-${esc(f.id)}" aria-expanded="${open}">${open ? "Hide details" : "More details"}</button>
+      ${canWrite ? `<button type="button" class="star icon" data-fid="star-${esc(f.id)}" aria-pressed="${on}" aria-label="Star ${esc(f.street)}">${on ? "★" : "☆"}</button>` : ""}
+    </div>
+  </article>`;
+}
+function renderTabs() {
+  const undecided = flats.filter(f => !decisions[f.id]?.decision);
+  const live = undecided.filter(f => !isRejected(f));
+  const n = key => key === "all" ? live.length : undecided.filter(f => statusClass(f) === key).length;
+  const pageCount = key => key === "flats" ? undecided.length : flats.filter(f => decisions[f.id]?.decision === key).length;
+  $("nav").innerHTML = PAGES.map(([k, l]) => `<button type="button" id="page-${k}" data-page="${k}" aria-pressed="${page === k}">${l} (${pageCount(k)})</button>`).join("");
+  $("tabs").hidden = page !== "flats";
+  $("lGround").hidden = $("lRejected").hidden = $("lGone").hidden = page !== "flats";
+  $("handoffBtn").hidden = !canWrite;
+  $("fStarred").closest("label").hidden = !canWrite;
+  $("importFile").closest("label").hidden = !canWrite;
+  $("tabs").innerHTML = STATUSES.map(([k, l]) => `<button type="button" class="tab" id="tab-${k}" data-tab="${k}" aria-pressed="${tab === k}"><b>${n(k)}</b> ${l}</button>`).join("");
+}
+function render() {
+  if (document.activeElement?.dataset?.draft) { clearTimeout(timer); timer = setTimeout(render, 1500); return; }
+  const focus = document.activeElement?.dataset?.fid || (document.activeElement?.dataset?.tab ? "tab:" + document.activeElement.dataset.tab : "");
+  const list = sorted(visible());
+  $("rows").innerHTML = list.slice(0, shown).map(card).join("");
+  renderTabs();
+  $("datasetNote").hidden = !noteText;
+  $("datasetNote").textContent = noteText;
+  const empty = $("empty");
+  empty.hidden = list.length > 0 || !loaded;
+  if (!flats.length) empty.textContent = db ? "No flats saved yet. Use Import flats.json above to load your list." : "Saved flats are not available in this view. Use Import flats.json above to work with your list for this visit.";
+  else if (page === "interested" && !flats.some(f => decisions[f.id]?.decision === "interested")) empty.textContent = "Nothing here yet. Press Interested on a flat and it moves to this page.";
+  else if (page === "not" && !flats.some(f => decisions[f.id]?.decision === "not")) empty.textContent = "Nothing here yet. Press Not interested on a flat and it moves to this page.";
+  else empty.textContent = "No flats match these filters. Try a longer journey time or clear a filter.";
+  $("count").textContent = !loaded ? "Loading flats…" : `Showing ${Math.min(shown, list.length)} of ${list.length} matching flats`;
+  $("loadMore").hidden = list.length <= shown;
+  $("loadMore").textContent = `Show ${Math.min(PAGE, list.length - shown)} more flats`;
+  $("blockBox").hidden = !blocks.length;
+  $("blockTitle").textContent = `Council and estate blocks not to re-add (${blocks.length})`;
+  $("blockList").textContent = blocks.map(b => b.name).sort().join(", ");
+  if (focus.startsWith("tab:")) $("tab-" + focus.slice(4))?.focus();
+  else if (focus) document.querySelector(`[data-fid="${CSS.escape(focus)}"]`)?.focus();
+}
+let timer = null;
+const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 80); };
+function refreshFilters() {
+  fillSelect($("fArea"), "All areas", uniq("area"));
+  fillSelect($("fZone"), "All zones", uniq("zone"));
+  fillSelect($("fType"), "All types", uniq("buildingType"));
+}
+
+/* Controls */
+$("fSort").value = store.get("fSort", "distance");
+["fTransit", "fBike"].forEach(id => { $(id).value = store.get(id, ""); });
+["fSort", "fArea", "fZone", "fType", "fTransit", "fBike"].forEach(id => $(id).addEventListener("change", e => { store.set(id, e.target.value); shown = PAGE; render(); }));
+["fGround", "fRejected", "fGone", "fStarred"].forEach(id => {
+  $(id).checked = store.get(id, false);
+  $(id).addEventListener("change", e => { store.set(id, e.target.checked); shown = PAGE; render(); });
+});
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-tab]");
+  if (!b) return;
+  tab = b.dataset.tab; store.set("tab", tab); shown = PAGE; render();
+});
+$("loadMore").addEventListener("click", () => { shown += PAGE; render(); });
+$("nav").addEventListener("click", e => {
+  const b = e.target.closest("[data-page]");
+  if (!b) return;
+  page = b.dataset.page; store.set("page", page); shown = PAGE; render();
+  $("page-" + page)?.focus();
+});
+async function saveDecision(id, patch) {
+  const before = decisions[id];
+  const next = { ...before, ...patch };
+  if (next.decision || next.comment) decisions[id] = next; else delete decisions[id];
+  render();
+  if (!db) { store.set("decisions", decisions); return true; }
+  try {
+    if (decisions[id]) await db.doc("decisions/" + id).set(decisions[id]);
+    else await db.doc("decisions/" + id).delete();
+    return true;
+  } catch {
+    if (before) decisions[id] = before; else delete decisions[id];
+    render();
+    $("count").textContent = "That change could not be saved. Try again in a moment.";
+    return false;
+  }
+}
+$("rows").addEventListener("input", e => {
+  const id = e.target.dataset.draft;
+  if (id) drafts[id] = e.target.value;
+});
+$("rows").addEventListener("click", async e => {
+  const el = e.target.closest(".card");
+  if (!el) return;
+  const id = el.dataset.id;
+  const decide = e.target.closest("[data-decide]");
+  if (decide) {
+    const value = decide.dataset.decide;
+    await saveDecision(id, { decision: value, checkedAt: value ? new Date().toISOString() : "" });
+  } else if (e.target.closest(".comment-btn")) {
+    commenting.has(id) ? commenting.delete(id) : commenting.add(id);
+    render();
+    if (commenting.has(id)) $("c-" + id)?.focus();
+  } else if (e.target.closest(".save-comment")) {
+    const text = (drafts[id] ?? decisions[id]?.comment ?? "").trim();
+    commenting.delete(id);
+    if (await saveDecision(id, { comment: text })) delete drafts[id];
+  } else if (e.target.closest(".more-btn")) {
+    opened.has(id) ? opened.delete(id) : opened.add(id);
+    render();
+  } else if (e.target.closest(".star")) {
+    const on = !stars.has(id);
+    on ? stars.add(id) : stars.delete(id);
+    render();
+    if (!db) { store.set("stars", [...stars]); return; }
+    try {
+      if (on) await db.doc("stars/" + id).set({ starred: true });
+      else await db.doc("stars/" + id).delete();
+    } catch {
+      on ? stars.delete(id) : stars.add(id);
+      render();
+      $("count").textContent = "That star could not be saved. Try again in a moment.";
+    }
+  }
+});
+
+/* Handoff */
+async function copyHandoff() {
+  try { await navigator.clipboard.writeText($("handoffText").value); return true; }
+  catch { $("handoffText").select(); return false; }
+}
+$("handoffBtn").addEventListener("click", async () => {
+  const list = Object.entries(decisions);
+  const interested = list.filter(([, d]) => d.decision === "interested").length;
+  const not = list.filter(([, d]) => d.decision === "not").length;
+  const comments = list.filter(([, d]) => d.comment).length;
+  const summary = `${interested} interested, ${not} not interested, ${comments} with comments`;
+  const named = id => flats.find(f => f.id === id)?.street || id;
+  const localList = list.map(([id, d]) => `${named(id)} (${id}): ${d.decision === "not" ? "not interested" : d.decision || "undecided"}${d.comment ? ", comment: " + d.comment : ""}`).join("; ");
+  $("handoffText").value = `Handoff: read my decisions and comments in the London Flat Tracker (${summary}) and refresh it: re-check live listings, price drops and what has gone. ${TRACKER_URL}${!db && list.length ? " My choices from the local copy: " + localList : ""}`;
+  $("handoffPanel").hidden = false;
+  const copied = copyHandoff();
+  let saved = !db;
+  if (db) {
+    try { await db.doc("meta/handoff").set({ at: new Date().toISOString(), interested, notInterested: not, comments }); saved = true; } catch {}
+  }
+  $("handoffStatus").textContent = !saved ? "Your choices are saved, but the handoff time could not be recorded. You can still send the message below."
+    : (await copied) ? `Handoff ready: ${summary}. The message is copied, so paste it into your Claude chat to start the refresh.`
+    : `Handoff ready: ${summary}. Copy the message below and paste it into your Claude chat to start the refresh.`;
+});
+$("handoffCopy").addEventListener("click", async () => {
+  $("handoffCopy").textContent = (await copyHandoff()) ? "Copied" : "Press Ctrl+C to copy";
+});
+
+/* Import */
+const squash = k => k.toLowerCase().replace(/[^a-z0-9£]/g, "");
+const ALIASES = {
+  id: ["id"], url: ["url", "link", "listingurl"], street: ["street", "address", "road"], postcode: ["postcode"], area: ["area"], zone: ["zone"],
+  floor: ["floor"], price: ["price", "asking", "askingprice", "guide"], priceNote: ["pricenote"], sqft: ["sqft", "size", "sizesqft"],
+  ppsf: ["£sqft", "ppsf", "psf", "pricepersqft", "persqft"], tenure: ["tenure"], lease: ["lease", "leaseyears", "leaseremaining"],
+  groundRent: ["groundrent"], serviceCharge: ["servicecharge"], buildingType: ["buildingtype", "type"], daysOnMarket: ["daysonmarket", "dom"],
+  reductions: ["reductions"], agent: ["agent"], status: ["status"], reason: ["reason"], check: ["whattocheck", "tocheck", "check"],
+  distance: ["distancefromn15dh", "distance", "distancemiles", "distancemi"], lat: ["lat", "latitude"], lon: ["lon", "lng", "longitude"],
+  transitMins: ["transitmins"], transitChanges: ["transitchanges"], transitRoute: ["transitroute"], bikeMins: ["bikemins"], bikeMiles: ["bikemiles"],
+  lastChecked: ["lastchecked"],
+};
+function number(v) {
+  if (typeof v === "number") return v;
+  const m = String(v ?? "").replace(/,/g, "").match(/([\d.]+)\s*(k\b|m\b)?/i);
+  if (!m) return undefined;
+  return parseFloat(m[1]) * (/k/i.test(m[2] || "") ? 1000 : /m/i.test(m[2] || "") ? 1000000 : 1);
+}
+function mapFlat(raw) {
+  const byKey = new Map(Object.entries(raw).map(([k, v]) => [squash(k), v]));
+  const out = {};
+  for (const [field, names] of Object.entries(ALIASES)) {
+    const hit = names.find(n => byKey.has(squash(n)));
+    const v = hit && byKey.get(squash(hit));
+    if (v !== undefined && v !== null && v !== "") out[field] = v;
+  }
+  for (const k of ["price", "sqft", "ppsf", "lat", "lon"]) if (k in out) { const n = number(out[k]); n === undefined || isNaN(n) ? delete out[k] : out[k] = n; }
+  if ("distance" in out) {
+    const n = number(out.distance);
+    if (n === undefined || isNaN(n)) delete out.distance;
+    else out.distance = /km/i.test(String(out.distance)) ? n * 0.6214 : n;
+  }
+  if ("zone" in out) out.zone = String(out.zone);
+  if (out.status) out.status = String(out.status).replace(/^\w/, c => c.toUpperCase());
+  return out;
+}
+const safeId = s => String(s).replace(/[^A-Za-z0-9_\-.~:@+]/g, "-").slice(0, 150);
+function idFor(m, i) {
+  if (m.id != null) return safeId(m.id);
+  const u = String(m.url || "").match(/(\d{6,})/);
+  return u ? "listing-" + u[1] : "flat-" + i;
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function writeFlat(doc) {
+  for (let i = 0; i < 6; i++) {
+    try { return await db.doc("flats/" + doc.id).set(doc); }
+    catch (e) {
+      if (e?.code !== "resource_exhausted" && e?.code !== "unavailable") throw e;
+      await wait(1500 * (i + 1));
+    }
+  }
+  throw { code: "resource_exhausted" };
+}
+$("importFile").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  let list;
+  try {
+    const parsed = JSON.parse(await file.text());
+    list = Array.isArray(parsed) ? parsed : parsed.flats;
+    if (!Array.isArray(list)) throw 0;
+  } catch {
+    $("count").textContent = "That file could not be read. It needs to be JSON holding a list of flats.";
+    return;
+  }
+  const byUrl = new Map(flats.filter(f => f.url).map(f => [f.url, f]));
+  const byId = new Map(flats.map(f => [f.id, f]));
+  const docs = list.filter(r => r && typeof r === "object").map(mapFlat).filter(m => m.street || m.url).map((m, i) => {
+    const ex = byUrl.get(m.url) || byId.get(idFor(m, i));
+    return { ...ex, ...m, id: ex ? ex.id : idFor(m, i) };
+  });
+  if (!db) {
+    docs.forEach(d => byId.set(d.id, d));
+    flats = [...byId.values()];
+    noteText = `Imported ${docs.length} flats for this visit only. They will not be saved.`;
+    loaded = true; refreshFilters(); render();
+    return;
+  }
+  try {
+    let done = 0;
+    for (const d of docs) {
+      await writeFlat(d);
+      if (++done % 10 === 0) $("count").textContent = `Imported ${done} of ${docs.length} flats…`;
+    }
+    await db.doc("meta/dataset").set({ note: `${docs.length} flats imported from ${file.name} on ${new Date().toLocaleDateString("en-GB")}.` });
+    $("count").textContent = `Imported ${docs.length} flats.`;
+  } catch (err) {
+    $("count").textContent = err?.code === "quota_exceeded" ? "The tracker's storage is full, so the import stopped." : "The import stopped part way. Flats already saved are kept, so you can run it again.";
+  }
+});
+
+/* Data */
+render();
+(async () => {
+  db = await window.claude?.use?.("db") ?? null;
+  if (document.documentElement.dataset.site === "public") {
+    canWrite = false; tab = "all"; page = "flats";
+    try {
+      const d = await (await fetch("data.json", { cache: "no-store" })).json();
+      flats = d.flats; decisions = d.decisions || {}; blocks = d.blocks || []; noteText = d.note || "";
+    } catch { noteText = "The flats could not be loaded. Refresh the page to try again."; }
+    loaded = true; refreshFilters(); render();
+    return;
+  }
+  if (!db) {
+    flats = JSON.parse($("seedData").textContent);
+    noteText = "This is a saved copy and may be out of date. Open the tracker link for the latest flats. Choices made here stay in this browser.";
+    loaded = true; refreshFilters(); render();
+    return;
+  }
+  const user = await window.claude.use("user");
+  canWrite = (await user?.can?.("data.write")) !== false;
+  let chunkFlats = [], docFlats = [];
+  const merge = () => {
+    const all = new Map(chunkFlats.map(f => [f.id, f]));
+    docFlats.forEach(f => all.set(f.id, f));
+    flats = [...all.values()];
+    refreshFilters(); schedule();
+  };
+  db.collection("chunks").onSnapshot(s => {
+    chunkFlats = s.docs.flatMap(d => d.data().flats || []);
+    loaded = true; merge();
+  }, () => { loaded = true; render(); });
+  db.collection("flats").onSnapshot(s => {
+    docFlats = s.docs.map(d => ({ ...d.data(), id: d.id }));
+    merge();
+  }, () => {});
+  db.collection("blocks").onSnapshot(s => { blocks = s.docs.map(d => d.data()); schedule(); }, () => {});
+  db.collection("stars").onSnapshot(s => { stars = new Set(s.docs.map(d => d.id)); schedule(); }, () => {});
+  db.collection("decisions").onSnapshot(s => { decisions = Object.fromEntries(s.docs.map(d => [d.id, { ...d.data() }])); schedule(); }, () => {});
+  db.doc("meta/dataset").onSnapshot(s => { noteText = s.exists ? String(s.data().note || "") : ""; schedule(); }, () => {});
+})();
+</script>
+</body></html>
