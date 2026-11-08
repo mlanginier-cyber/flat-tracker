@@ -408,7 +408,7 @@ function renderTabs() {
   const undecided = flats.filter(f => !decisions[f.id]?.decision);
   const live = undecided.filter(f => !isRejected(f));
   const n = key => key === "all" ? live.length : undecided.filter(f => statusClass(f) === key).length;
-  const pageCount = key => key === "flats" ? undecided.length : flats.filter(f => decisions[f.id]?.decision === key).length;
+  const pageCount = key => key === "flats" ? live.length : flats.filter(f => decisions[f.id]?.decision === key).length;
   $("nav").innerHTML = PAGES.map(([k, l]) => `<button type="button" id="page-${k}" data-page="${k}" aria-pressed="${page === k}">${l} (${pageCount(k)})</button>`).join("");
   $("tabs").hidden = page !== "flats";
   $("lGround").hidden = $("lRejected").hidden = $("lGone").hidden = page !== "flats";
